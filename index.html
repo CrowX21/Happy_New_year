@@ -14,33 +14,45 @@ body{
     touch-action:manipulation;
 }
 
-/* ===== COUNTDOWN WRAPPER (ANTI TERPOTONG) ===== */
+/* ===== ORIENTATION WARNING ===== */
+#rotate-warning{
+    position:fixed;
+    inset:0;
+    background:black;
+    color:white;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    z-index:9999;
+    font-size:clamp(18px,5vw,32px);
+    padding:20px;
+}
+
+/* ===== COUNTDOWN WRAPPER ===== */
 #countdown-wrapper{
     position:fixed;
     inset:0;
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:8vh 5vw;   /* ruang aman glow */
+    padding:8vh 5vw;
     box-sizing:border-box;
     pointer-events:none;
 }
 
-/* ===== COUNTDOWN TEXT ===== */
 #countdown{
     text-align:center;
     font-weight:bold;
     color:white;
     font-size:clamp(56px, 18vw, 140px);
     line-height:1.1;
-    max-width:100%;
     text-shadow:
         0 0 16px #00ffff,
         0 0 32px #00ffff,
         0 0 64px #00ffff;
 }
 
-/* ===== CANVAS ===== */
 canvas{
     position:fixed;
     inset:0;
@@ -50,6 +62,12 @@ canvas{
 
 <body>
 
+<div id="rotate-warning">
+    🔄<br><br>
+    Silakan putar perangkat ke <b>LANDSCAPE</b><br>
+    untuk pengalaman terbaik
+</div>
+
 <div id="countdown-wrapper">
     <div id="countdown">10</div>
 </div>
@@ -57,6 +75,20 @@ canvas{
 <canvas id="canvas"></canvas>
 
 <script>
+/* ===== ORIENTATION HANDLER ===== */
+const warning = document.getElementById("rotate-warning");
+
+function checkOrientation(){
+    if(innerHeight > innerWidth){
+        warning.style.display = "flex";
+    }else{
+        warning.style.display = "none";
+    }
+}
+addEventListener("resize", checkOrientation);
+addEventListener("orientationchange", checkOrientation);
+checkOrientation();
+
 /* ===== AUDIO PETASAN ===== */
 const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
 ["click","touchstart"].forEach(e=>{
@@ -84,17 +116,17 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 function resize(){
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(devicePixelRatio||1,2);
     canvas.width = innerWidth * dpr;
     canvas.height = innerHeight * dpr;
-    canvas.style.width = innerWidth + "px";
-    canvas.style.height = innerHeight + "px";
+    canvas.style.width = innerWidth+"px";
+    canvas.style.height = innerHeight+"px";
     ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 resize();
 addEventListener("resize", resize);
 
-/* ===== COUNTDOWN 10 - 0 ===== */
+/* ===== COUNTDOWN ===== */
 const cd = document.getElementById("countdown");
 const wrapper = document.getElementById("countdown-wrapper");
 let n = 10;
@@ -114,9 +146,11 @@ const timer = setInterval(()=>{
 /* ===== BACKGROUND FIREWORK ===== */
 let bg=[];
 function spawnBG(){
+    if(innerHeight > innerWidth) return; // pause if portrait
+
     const x=Math.random()*innerWidth;
     const y=Math.random()*innerHeight*0.6;
-    const count = innerWidth < 600 ? 50 : 100;
+    const count = innerWidth < 700 ? 50 : 100;
 
     for(let i=0;i<count;i++){
         const a=Math.random()*Math.PI*2;
@@ -142,8 +176,7 @@ function fireworkText(text,yPos,fontScale){
     temp.width=innerWidth;
     temp.height=innerHeight;
 
-    const maxFont = innerWidth < 600 ? 80 : 180;
-    const fontSize=Math.min(innerWidth*fontScale, maxFont);
+    const fontSize=Math.min(innerWidth*fontScale, innerWidth<700?90:180);
     tctx.fillStyle="white";
     tctx.textAlign="center";
     tctx.font=`bold ${fontSize}px Arial`;
@@ -177,45 +210,46 @@ function fireworkText(text,yPos,fontScale){
 function startShow(){
     fireworkText("HAPPY NEW YEAR", innerHeight*0.45, 0.22);
     setTimeout(()=>{
-        const year = new Date().getFullYear() + 1;
-        fireworkText(year, innerHeight*0.8, 0.13);
+        fireworkText(new Date().getFullYear()+1, innerHeight*0.8, 0.13);
     },1500);
 }
 
-/* ===== ANIMATION LOOP ===== */
+/* ===== ANIMATION ===== */
 function animate(){
     ctx.clearRect(0,0,innerWidth,innerHeight);
 
-    bg.forEach((p,i)=>{
-        p.x+=p.vx;
-        p.y+=p.vy;
-        p.vy+=0.04;
-        p.life--;
-
-        ctx.shadowBlur=15;
-        ctx.shadowColor=p.color;
-        ctx.fillStyle=p.color;
-        ctx.fillRect(p.x,p.y,2,2);
-
-        if(p.life<=0) bg.splice(i,1);
-    });
-
-    particles.forEach(p=>{
-        if(phase==="explode"){
+    if(innerHeight <= innerWidth){
+        bg.forEach((p,i)=>{
             p.x+=p.vx;
             p.y+=p.vy;
-            p.vx*=0.9;
-            p.vy*=0.9;
-        }else{
-            p.x+=(p.tx-p.x)*0.08;
-            p.y+=(p.ty-p.y)*0.08;
-        }
+            p.vy+=0.04;
+            p.life--;
 
-        ctx.shadowBlur=20;
-        ctx.shadowColor=p.color;
-        ctx.fillStyle=p.color;
-        ctx.fillRect(p.x,p.y,3,3);
-    });
+            ctx.shadowBlur=15;
+            ctx.shadowColor=p.color;
+            ctx.fillStyle=p.color;
+            ctx.fillRect(p.x,p.y,2,2);
+
+            if(p.life<=0) bg.splice(i,1);
+        });
+
+        particles.forEach(p=>{
+            if(phase==="explode"){
+                p.x+=p.vx;
+                p.y+=p.vy;
+                p.vx*=0.9;
+                p.vy*=0.9;
+            }else{
+                p.x+=(p.tx-p.x)*0.08;
+                p.y+=(p.ty-p.y)*0.08;
+            }
+
+            ctx.shadowBlur=20;
+            ctx.shadowColor=p.color;
+            ctx.fillStyle=p.color;
+            ctx.fillRect(p.x,p.y,3,3);
+        });
+    }
 
     ctx.shadowBlur=0;
     requestAnimationFrame(animate);
