@@ -3,156 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Happy New Year Neon</title>
-
+<title>Happy New Year 2026</title>
 <style>
-body{
-    margin:0;
-    background:black;
-    overflow:hidden;
-    font-family:Arial,sans-serif;
-}
-canvas{
-    position:fixed;
-    inset:0;
-}
+  * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+  body { margin:0; width:100vw; height:100vh; overflow:hidden; background:#e5ddd5; color:#000; }
+
+  /* Halaman input ala WhatsApp */
+  #dialog { position: fixed; inset:0; display:flex; flex-direction:column; justify-content:flex-end; background: #e5ddd5; padding:10px; }
+  .chat-container { display:flex; flex-direction:column; max-width: 400px; margin:0 auto; }
+  .chat-bubble { background:#fff; padding:12px 16px; border-radius:20px; margin:5px 0; box-shadow:0 1px 0 rgba(0,0,0,0.1); font-size:16px; }
+  .input-container { display:flex; margin-top:10px; }
+  .input-container input { flex:1; padding:10px 14px; border-radius:20px; border:none; outline:none; font-size:16px; }
+  .input-container button { background:#25d366; border:none; border-radius:50%; width:50px; height:50px; margin-left:10px; font-size:24px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+  /* Canvas dan teks ucapan */
+  #scene { display:none; width:100%; height:100%; position:relative; }
+  canvas { position:absolute; inset:0; }
+  #text { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:800; line-height:1.2; padding:20px; z-index:2; pointer-events:none; font-size:clamp(28px,6vw,56px); }
+  #text span { opacity:0; animation: explode 1s forwards; display:inline-block; white-space:pre; color: rgb(0,255,255); }
+  @keyframes explode {0%{transform:scale(0) translateY(40px);opacity:0;}70%{transform:scale(1.4);opacity:1;}100%{transform:scale(1);opacity:1;}}
 </style>
 </head>
-
 <body>
 
-<canvas id="canvas"></canvas>
+<div id="dialog">
+  <div class="chat-container">
+    <div class="chat-bubble">Halo! Tulis nama kamu untuk ucapan Tahun Baru 🎉</div>
+    <div class="input-container">
+      <input id="nama" placeholder="Nama" autocomplete="off">
+      <button onclick="kirim()">
+        <!-- Icon pesawat kertas ala Messenger -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="scene">
+  <canvas id="fireworks"></canvas>
+  <div id="text"></div>
+  <audio id="boomSound" src="https://www.soundjay.com/explosion/explosion-01.mp3" preload="auto"></audio>
+</div>
 
 <script>
-/* ===== CANVAS ===== */
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-function resize(){
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    canvas.width = innerWidth * dpr;
-    canvas.height = innerHeight * dpr;
-    canvas.style.width = innerWidth + "px";
-    canvas.style.height = innerHeight + "px";
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-resize();
-addEventListener("resize", resize);
-
-/* ===== BACKGROUND FIREWORK ===== */
-let bg=[];
-function spawnBG(){
-    const x=Math.random()*innerWidth;
-    const y=Math.random()*innerHeight*0.45;
-    const count=innerWidth<700?25:60;
-    for(let i=0;i<count;i++){
-        const a=Math.random()*Math.PI*2;
-        const s=Math.random()*4+2;
-        bg.push({
-            x,y,
-            vx:Math.cos(a)*s,
-            vy:Math.sin(a)*s,
-            life:80,
-            color:`hsl(${Math.random()*360},100%,60%)`
-        });
-    }
-}
-setInterval(spawnBG,900);
-
-/* ===== TEXT FIREWORK (FIX TOTAL) ===== */
+const dialog = document.getElementById('dialog');
+const scene  = document.getElementById('scene');
+const textEl = document.getElementById('text');
+const input  = document.getElementById('nama');
+const boomSound = document.getElementById('boomSound');
+const canvas = document.getElementById('fireworks');
+const ctx = canvas.getContext('2d');
+let W,H;
 let particles=[];
-let phase="explode";
+let backgroundExplosions=[];
 
-function fireworkText(text, yRatio){
-    const temp=document.createElement("canvas");
-    const tctx=temp.getContext("2d");
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+window.addEventListener('resize',resize); resize();
 
-    /* SAFE CANVAS */
-    const safeMargin = innerHeight * 0.25;
-    temp.width = innerWidth;
-    temp.height = innerHeight + safeMargin*2;
-
-    /* POSISI AMAN */
-    const centerY = innerHeight * yRatio + safeMargin;
-
-    /* FONT BERDASARKAN TINGGI LAYAR */
-    const fontSize = Math.min(
-        innerHeight * 0.18,
-        innerWidth < 700 ? 56 : 140
-    );
-
-    tctx.clearRect(0,0,temp.width,temp.height);
-    tctx.fillStyle="white";
-    tctx.textAlign="center";
-    tctx.textBaseline="middle";
-    tctx.font=`bold ${fontSize}px Arial`;
-    tctx.fillText(text, temp.width/2, centerY);
-
-    const data=tctx.getImageData(0,0,temp.width,temp.height).data;
-
-    particles.length = 0;
-
-    for(let y=0;y<temp.height;y+=10){
-        for(let x=0;x<temp.width;x+=10){
-            const i=(y*temp.width+x)*4;
-            if(data[i+3]>150){
-                const a=Math.random()*Math.PI*2;
-                const s=Math.random()*5+2;
-                particles.push({
-                    x:innerWidth/2,
-                    y:innerHeight*yRatio,
-                    vx:Math.cos(a)*s,
-                    vy:Math.sin(a)*s,
-                    tx:x,
-                    ty:y-safeMargin,
-                    color:`hsl(${Math.random()*360},100%,60%)`
-                });
-            }
-        }
-    }
-
-    phase="explode";
-    setTimeout(()=>phase="form",1400);
+function kirim(){
+  const nama=input.value.trim();
+  if(!nama){ alert('Nama belum diisi'); input.focus(); return; }
+  boomSound.currentTime=0; boomSound.play().catch(()=>{});
+  dialog.style.display='none';
+  scene.style.display='block';
+  tampilkanTeks(`Happy New Year 2026 ${nama}`);
+  mulaiKembangApi(nama);
 }
 
-/* ===== SHOW ===== */
-setTimeout(()=>{
-    fireworkText("HAPPY NEW YEAR",0.5);
-},1000);
+function tampilkanTeks(teks){
+  textEl.innerHTML='';
+  [...teks].forEach((c,i)=>{
+    const span=document.createElement('span');
+    span.textContent=c;
+    span.style.animationDelay=i*0.04+'s';
+    if(i>=17){ span.style.color=`rgb(${Math.floor(Math.random()*256)},${Math.floor(Math.random()*256)},${Math.floor(Math.random()*256)})`; }
+    else{ span.style.color='rgb(0,255,255)'; }
+    textEl.appendChild(span);
+  });
+}
 
-/* ===== ANIMATE ===== */
+function createTextParticles(text){
+  particles=[];
+  boomSound.currentTime=0; boomSound.play().catch(()=>{});
+  const off=document.createElement('canvas'); const offCtx=off.getContext('2d');
+  off.width=W; off.height=H;
+  offCtx.fillStyle='#fff'; offCtx.textAlign='center'; offCtx.textBaseline='middle';
+  offCtx.font=`bold ${Math.min(W/8,90)}px Segoe UI`; offCtx.fillText(text,W/2,H/2);
+  const data=offCtx.getImageData(0,0,W,H).data;
+  for(let y=0;y<H;y+=4){for(let x=0;x<W;x+=4){const i=(y*W+x)*4;if(data[i+3]>150){
+    const a=Math.random()*Math.PI*2; const s=Math.random()*16+10;
+    particles.push({x:W/2,y:H/2,tx:x,ty:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,jitter:Math.random()*2});
+  }}}
+}
+
+function createBackgroundExplosion(x,y){
+  boomSound.currentTime=0; boomSound.play().catch(()=>{});
+  const explosion=[];
+  for(let i=0;i<120;i++){
+    const a=Math.random()*2*Math.PI; const s=Math.random()*12+6;
+    explosion.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:50+Math.random()*30});
+  }
+  backgroundExplosions.push(explosion);
+}
+
 function animate(){
-    ctx.clearRect(0,0,innerWidth,innerHeight);
-
-    bg.forEach((p,i)=>{
-        p.x+=p.vx; p.y+=p.vy;
-        p.vy+=0.04; p.life--;
-        ctx.shadowBlur=12;
-        ctx.shadowColor=p.color;
-        ctx.fillStyle=p.color;
-        ctx.fillRect(p.x,p.y,2,2);
-        if(p.life<=0) bg.splice(i,1);
-    });
-
-    particles.forEach(p=>{
-        if(phase==="explode"){
-            p.x+=p.vx; p.y+=p.vy;
-            p.vx*=0.9; p.vy*=0.9;
-        }else{
-            p.x+=(p.tx-p.x)*0.08;
-            p.y+=(p.ty-p.y)*0.08;
-        }
-        ctx.shadowBlur=16;
-        ctx.shadowColor=p.color;
-        ctx.fillStyle=p.color;
-        ctx.fillRect(p.x,p.y,3,3);
-    });
-
-    ctx.shadowBlur=0;
-    requestAnimationFrame(animate);
+  ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(0,0,W,H);
+  particles.forEach(p=>{
+    p.vx+=(p.tx-p.x)*0.015; p.vy+=(p.ty-p.y)*0.015; p.vx*=0.82; p.vy*=0.82;
+    p.x+=p.vx+(Math.random()-0.5)*p.jitter; p.y+=p.vy+(Math.random()-0.5)*p.jitter;
+    ctx.fillStyle=`hsl(${(Date.now()/18+p.tx)%360},100%,60%)`; ctx.fillRect(p.x,p.y,2,2);
+  });
+  backgroundExplosions.forEach((expl,index)=>{
+    expl.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.life--; ctx.fillStyle=`hsl(${(Date.now()/10+p.x)%360},100%,60%)`; ctx.fillRect(p.x,p.y,4,4); });
+    backgroundExplosions[index]=expl.filter(p=>p.life>0);
+  });
+  backgroundExplosions=backgroundExplosions.filter(expl=>expl.length>0);
+  requestAnimationFrame(animate);
 }
-animate();
-</script>
 
+function mulaiKembangApi(nama){
+  createTextParticles(`Happy New Year 2026 ${nama}`);
+  animate();
+  setInterval(()=>{ createBackgroundExplosion(Math.random()*W, Math.random()*H/2); },1200);
+}
+</script>
 </body>
 </html>
