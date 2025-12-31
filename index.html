@@ -14,18 +14,19 @@ body{
     touch-action:manipulation;
 }
 
-/* WRAPPER AMAN */
+/* ===== COUNTDOWN WRAPPER (ANTI TERPOTONG) ===== */
 #countdown-wrapper{
     position:fixed;
     inset:0;
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:8vh 5vw;          /* ruang aman untuk glow */
+    padding:8vh 5vw;   /* ruang aman glow */
     box-sizing:border-box;
+    pointer-events:none;
 }
 
-/* FONT COUNTDOWN */
+/* ===== COUNTDOWN TEXT ===== */
 #countdown{
     text-align:center;
     font-weight:bold;
@@ -37,21 +38,12 @@ body{
         0 0 16px #00ffff,
         0 0 32px #00ffff,
         0 0 64px #00ffff;
-    word-break:keep-all;
 }
 
-
-/* CANVAS FULLSCREEN */
+/* ===== CANVAS ===== */
 canvas{
     position:fixed;
     inset:0;
-}
-
-/* DESKTOP */
-@media (min-width:768px){
-    #countdown{
-        top:35%;
-    }
 }
 </style>
 </head>
@@ -65,7 +57,7 @@ canvas{
 <canvas id="canvas"></canvas>
 
 <script>
-/* ===== AUDIO PETASAN SAJA ===== */
+/* ===== AUDIO PETASAN ===== */
 const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
 ["click","touchstart"].forEach(e=>{
     document.addEventListener(e,()=>{
@@ -104,6 +96,7 @@ addEventListener("resize", resize);
 
 /* ===== COUNTDOWN 10 - 0 ===== */
 const cd = document.getElementById("countdown");
+const wrapper = document.getElementById("countdown-wrapper");
 let n = 10;
 
 const timer = setInterval(()=>{
@@ -112,13 +105,13 @@ const timer = setInterval(()=>{
     n--;
     if(n < 0){
         clearInterval(timer);
-        cd.style.display = "none";
+        wrapper.style.display = "none";
         boom(2);
         startShow();
     }
 },1000);
 
-/* ===== BACKGROUND FIREWORK (RESPONSIVE) ===== */
+/* ===== BACKGROUND FIREWORK ===== */
 let bg=[];
 function spawnBG(){
     const x=Math.random()*innerWidth;
@@ -184,7 +177,7 @@ function fireworkText(text,yPos,fontScale){
 function startShow(){
     fireworkText("HAPPY NEW YEAR", innerHeight*0.45, 0.22);
     setTimeout(()=>{
-        const year=new Date().getFullYear()+1;
+        const year = new Date().getFullYear() + 1;
         fireworkText(year, innerHeight*0.8, 0.13);
     },1500);
 }
