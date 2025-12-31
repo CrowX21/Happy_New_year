@@ -14,20 +14,32 @@ body{
     touch-action:manipulation;
 }
 
-/* COUNTDOWN RESPONSIVE */
+/* WRAPPER AMAN */
+#countdown-wrapper{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:8vh 5vw;          /* ruang aman untuk glow */
+    box-sizing:border-box;
+}
+
+/* FONT COUNTDOWN */
 #countdown{
-    position:absolute;
-    top:32%;
-    width:100%;
     text-align:center;
     font-weight:bold;
     color:white;
-    font-size:clamp(64px,18vw,140px);
+    font-size:clamp(56px, 18vw, 140px);
+    line-height:1.1;
+    max-width:100%;
     text-shadow:
-        0 0 20px #00ffff,
-        0 0 40px #00ffff,
-        0 0 80px #00ffff;
+        0 0 16px #00ffff,
+        0 0 32px #00ffff,
+        0 0 64px #00ffff;
+    word-break:keep-all;
 }
+
 
 /* CANVAS FULLSCREEN */
 canvas{
@@ -46,7 +58,10 @@ canvas{
 
 <body>
 
-<div id="countdown">10</div>
+<div id="countdown-wrapper">
+    <div id="countdown">10</div>
+</div>
+
 <canvas id="canvas"></canvas>
 
 <script>
